@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Optimized Sentiment Analysis API")
 groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
-app.mount("/static", StaticFiles(directory="./static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
