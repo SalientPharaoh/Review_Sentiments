@@ -1,87 +1,292 @@
-<p align="center">
-  <a href="https://nextjs-fastapi-starter.vercel.app/">
-    <img src="https://assets.vercel.com/image/upload/v1588805858/repositories/vercel/logo.png" height="96">
-    <h3 align="center">Next.js FastAPI Starter</h3>
-  </a>
-</p>
+# Sentiment Analysis API Documentation
 
-<p align="center">Simple Next.j 14 boilerplate that uses <a href="https://fastapi.tiangolo.com/">FastAPI</a> as the API backend.</p>
+## Table of Contents
 
-<br/>
+- [Sentiment Analysis API Documentation](#sentiment-analysis-api-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [1. Introduction](#1-introduction)
+  - [2. Setup and Installation](#2-setup-and-installation)
+    - [Prerequisites](#prerequisites)
+    - [Installation Steps](#installation-steps)
+  - [3. API Endpoints](#3-api-endpoints)
+    - [POST /analyze\_file](#post-analyze_file)
+    - [POST /analyze\_batch](#post-analyze_batch)
+  - [4. Code Structure](#4-code-structure)
+  - [5. Key Components](#5-key-components)
+    - [Environment Variables](#environment-variables)
+    - [FastAPI Application](#fastapi-application)
+    - [Groq Client](#groq-client)
+    - [Pydantic Models](#pydantic-models)
+  - [6. Sentiment Analysis Process](#6-sentiment-analysis-process)
+    - [Key Functions](#key-functions)
+      - [analyze\_sentiments\_batch](#analyze_sentiments_batch)
+      - [process\_chunk](#process_chunk)
+      - [process\_reviews](#process_reviews)
+  - [7. Error Handling and Logging](#7-error-handling-and-logging)
+  - [8. Performance Considerations](#8-performance-considerations)
+  - [9. Security Considerations](#9-security-considerations)
+  - [10. Deployment](#10-deployment)
+  - [11. Limitations and Future Improvements](#11-limitations-and-future-improvements)
+  - [12. Troubleshooting](#12-troubleshooting)
+  - [13. API Reference](#13-api-reference)
+    - [SentimentResponse Model](#sentimentresponse-model)
+    - [ReviewBatch Model](#reviewbatch-model)
+  - [14. Running FrontEnd](#14-running-frontend)
 
-## Introduction
+## 1. Introduction
 
-This is a hybrid Next.js 14 + Python template. One great use case of this is to write Next.js apps that use Python AI libraries on the backend, while still having the benefits of Next.js Route Handlers and Server Side Rendering.
+This Sentiment Analysis API is a FastAPI-based application that leverages the Groq API to analyze the sentiment of text reviews. The API can process reviews from uploaded CSV or XLSX files or as a batch of text inputs. It categorizes sentiments as positive, negative, or neutral, and provides sentiment scores along with top comments for each category.
 
-## How It Works
+## 2. Setup and Installation
 
-The Python/FastAPI server is mapped into to Next.js app under `/api/`.
+### Prerequisites
 
-This is implemented using [`next.config.js` rewrites](https://github.com/digitros/nextjs-fastapi/blob/main/next.config.js) to map any request to `/api/py/:path*` to the FastAPI API, which is hosted in the `/api` folder.
+- Python 3.7+
+- FastAPI
+- Pandas
+- Groq API access
+- Other dependencies (see `requirements.txt`)
 
-Also, the app/api routes are available on the same domain, so you can use NextJs Route Handlers and make requests to `/api/...`.
+### Installation Steps
 
-On localhost, the rewrite will be made to the `127.0.0.1:8000` port, which is where the FastAPI server is running.
+1. Clone the repository:
 
-In production, the FastAPI server is hosted as [Python serverless functions](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python) on Vercel.
+   ```bash
+   git clone <repository-url>
+   cd <repository-directory>
+   ```
 
-## Demo
+2. Create a virtual environment:
 
-https://nextjs-fastapi-starter.vercel.app/
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+   ```
 
-## Deploy Your Own
+3. Install dependencies:
 
-You can clone & deploy it to Vercel with one click:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fdigitros%2Fnextjs-fastapi%2Ftree%2Fmain)
+4. Set up environment variables:
+   Create a `.env` file in the project root with the following content:
 
-## Developing Locally
+   ```bash
+   GROQ_API_KEY=your_groq_api_key_here
+   ```
 
-You can clone & create this repo with the following command
+## 3. API Endpoints
 
-```bash
-npx create-next-app nextjs-fastapi --example "https://github.com/digitros/nextjs-fastapi"
+### POST /analyze_file
+
+Analyzes sentiments from a file upload (CSV or XLSX).
+
+**Request:**
+
+- Method: POST
+- Content-Type: multipart/form-data
+- Body: File upload (CSV or XLSX)
+
+**Response:**
+
+```json
+{
+  "positive": 0.6,
+  "negative": 0.3,
+  "neutral": 0.1,
+  "top_positive": ["Great product!", "Excellent service", "Highly recommended"],
+  "top_negative": ["Poor quality", "Terrible experience", "Would not buy again"],
+  "top_neutral": ["Average", "It's okay", "Neither good nor bad"]
+}
 ```
 
-## Getting Started
+### POST /analyze_batch
 
-First, create and activate a virtual environment:
+Analyzes sentiments from a batch of text reviews.
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
+**Request:**
+
+- Method: POST
+- Content-Type: application/json
+- Body:
+
+  ```json
+  {
+    "reviews": ["Great product!", "Poor quality", "Average experience"]
+  }
+  ```
+
+**Response:**
+Same format as /analyze_file
+
+## 4. Code Structure
+
+The application is structured as follows:
+
+- **Imports and Setup**: Initial imports, environment variable loading, and logger setup.
+- **FastAPI App Initialization**: Setting up the FastAPI application with CORS middleware.
+- **Model Definitions**: Pydantic models for request and response structures.
+- **Utility Functions**: Token counting and review chunking.
+- **Core Logic**: Functions for sentiment analysis using the Groq API.
+- **API Endpoints**: File upload and batch processing endpoints.
+
+## 5. Key Components
+
+### Environment Variables
+
+The application uses `python-dotenv` to load environment variables:
+
+```python
+from dotenv import load_dotenv
+load_dotenv()
 ```
 
-Then, install the dependencies:
+### FastAPI Application
+
+The main FastAPI application is initialized with CORS middleware:
+
+```python
+app = FastAPI(title="Optimized Sentiment Analysis API")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], ...)
+```
+
+### Groq Client
+
+The Groq client is initialized using the API key from environment variables:
+
+```python
+groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+```
+
+### Pydantic Models
+
+Two main Pydantic models are defined:
+
+1. `SentimentResponse`: Defines the structure of the API response.
+2. `ReviewBatch`: Defines the structure for batch review requests.
+
+## 6. Sentiment Analysis Process
+
+The sentiment analysis process involves several steps:
+
+1. **Tokenization**: The `num_tokens_from_string` function calculates the number of tokens in a given string.
+
+2. **Chunking**: Large batches of reviews are split into smaller chunks to fit within the model's token limit.
+
+3. **Sentiment Analysis**: Each chunk is processed using the Groq API with a specific prompt structure.
+
+4. **Result Aggregation**: Results from all chunks are combined, and top comments are extracted.
+
+### Key Functions
+
+#### analyze_sentiments_batch
+
+This function orchestrates the entire sentiment analysis process:
+
+```python
+async def analyze_sentiments_batch(reviews: List[str], max_retries: int = 5) -> List[Tuple[str, float]]:
+    # Implementation details...
+```
+
+#### process_chunk
+
+This function sends a chunk of reviews to the Groq API and processes the response:
+
+```python
+async def process_chunk(chunk: List[str]) -> List[Tuple[str, float]]:
+    # Implementation details...
+```
+
+#### process_reviews
+
+This function processes the results and prepares the final response:
+
+```python
+async def process_reviews(reviews: List[str]) -> Dict[str, any]:
+    # Implementation details...
+```
+
+## 7. Error Handling and Logging
+
+The application uses Python's `logging` module for error tracking and debugging:
+
+```python
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+```
+
+Errors are logged at various points in the code, especially during API calls and file processing.
+
+## 8. Performance Considerations
+
+- **Chunking**: Reviews are processed in chunks to optimize API usage and handle large datasets.
+- **Asynchronous Processing**: The application uses `asyncio` for non-blocking I/O operations.
+- **Retry Mechanism**: A retry mechanism with exponential backoff is implemented for API call failures.
+
+## 9. Security Considerations
+
+- **CORS**: Currently set to allow all origins (`"*"`). In production, this should be restricted.
+- **API Key**: Stored as an environment variable to prevent exposure in the code.
+- **Input Validation**: FastAPI provides automatic request validation based on the Pydantic models.
+
+## 10. Deployment
+
+To run the application:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+For production deployment, consider using a process manager like Gunicorn with Uvicorn workers.
+
+## 11. Limitations and Future Improvements
+
+- Implement more granular error handling and user feedback.
+- Add caching mechanism for repeated analyses.
+- Implement user authentication and rate limiting.
+- Expand sentiment analysis to include more detailed categories or emotion detection.
+
+## 12. Troubleshooting
+
+Common issues and their solutions:
+
+- **API Key Issues**: Ensure the `GROQ_API_KEY` is correctly set in the `.env` file.
+- **File Upload Errors**: Check file format and size limitations.
+- **Rate Limiting**: The application implements retries, but persistent rate limit errors may require reducing request frequency.
+
+## 13. API Reference
+
+### SentimentResponse Model
+
+```python
+class SentimentResponse(BaseModel):
+    positive: float
+    negative: float
+    neutral: float
+    top_positive: List[str]
+    top_negative: List[str]
+    top_neutral: List[str]
+```
+
+### ReviewBatch Model
+
+```python
+class ReviewBatch(BaseModel):
+    reviews: List[str]
+```
+
+## 14. Running FrontEnd
+
+```bash
+cd nextjs-fastapi
+```
+
 
 ```bash
 npm install
-# or
-yarn
-# or
-pnpm install
 ```
-
-Then, run the development server(python dependencies will be installed automatically here):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-The FastApi server will be running on [http://127.0.0.1:8000](http://127.0.0.1:8000) – feel free to change the port in `package.json` (you'll also need to update it in `next.config.js`).
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [FastAPI Documentation](https://fastapi.tiangolo.com/) - learn about FastAPI features and API.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
