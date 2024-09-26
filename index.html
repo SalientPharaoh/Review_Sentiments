@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen" x-data="app()" x-cloak>
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8 text-indigo-600">Sentiment Analysis Dashboard</h1>
+
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Upload Reviews</h2>
+            <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="file-upload" class="block text-sm font-medium text-gray-700 mb-2">Upload CSV or XLSX
+                        file</label>
+                    <div
+                        class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md h-3/4">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none"
+                                viewBox="0 0 48 48" aria-hidden="true">
+                                <path
+                                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="file-upload"
+                                    class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                    <span>Upload a file</span>
+                                    <input id="file-upload" name="file-upload" type="file" class="sr-only"
+                                        @change="handleFileUpload" accept=".csv,.xlsx">
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p class="text-xs text-gray-500">CSV or XLSX up to 10MB</p>
+                        </div>
+                    </div>
+                    <p x-text="fileName" class="mt-2 text-sm text-gray-600"></p>
+                </div>
+                <div class="flex justify-center items-center font-bold">OR</div>
+                <div class="flex-1">
+                    <label for="text-input" class="block text-sm font-medium text-gray-700 mb-2"> Enter reviews (one
+                        per line)</label>
+                    <textarea id="text-input" x-model="textInput" rows="4"
+                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full h-3/4 sm:text-sm border-gray-300 rounded-md border-2 pl-2 pt-2" placeholder="Enter the reviews (without numbering). Ensure each review is in a new line"></textarea>
+                </div>
+            </div>
+            <button @click="analyze" :disabled="isLoading"
+                class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg x-show="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+                <span x-text="isLoading ? 'Analyzing...' : 'Analyze Sentiment'"></span>
+            </button>
+        </div>
+
+        <div x-show="results" class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Results</h2>
+            <div class="flex flex-col md:flex-row gap-8">
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold mb-4">Sentiment Scores</h3>
+                    <div class="space-y-4">
+                        <template x-for="(score, sentiment) in results" :key="sentiment">
+                            <div x-show="['positive', 'negative', 'neutral'].includes(sentiment)"
+                                class="flex items-center">
+                                <div class="w-24 font-medium capitalize" x-text="sentiment"></div>
+                                <div class="flex-1 bg-gray-200 rounded-full h-4">
+                                    <div class="h-full rounded-full" :class="{
+                                            'bg-green-500': sentiment === 'positive',
+                                            'bg-red-500': sentiment === 'negative',
+                                            'bg-yellow-500': sentiment === 'neutral'
+                                        }" :style="`width: ${score * 100}%`">
+                                    </div>
+                                </div>
+                                <div class="w-16 text-right" x-text="`${(score * 100).toFixed(1)}%`"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold mb-4">Top Comments</h3>
+                    <div class="space-y-6">
+                        <template x-for="sentiment in ['positive', 'negative', 'neutral']" :key="sentiment">
+                            <div>
+                                <h4 class="text-lg font-medium mb-2 capitalize" x-text="sentiment"></h4>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <template x-for="comment in results[`top_${sentiment}`]" :key="comment">
+                                        <li class="text-sm text-gray-600" x-text="comment"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function app() {
+            return {
+                textInput: '',
+                results: null,
+                fileName: '',
+                isLoading: false,
+
+                handleFileUpload(event) {
+                    const file = event.target.files[0];
+                    if (file) {
+                        this.fileName = file.name;
+                    } else {
+                        this.fileName = '';
+                    }
+                },
+
+                async analyze() {
+                    try {
+                        this.isLoading = true;
+                        let response;
+                        const fileInput = document.getElementById('file-upload');
+                        if (fileInput.files.length > 0) {
+                            const formData = new FormData();
+                            formData.append('file', fileInput.files[0]);
+                            response = await fetch('http://localhost:8000/analyze_file', {
+                                method: 'POST',
+                                body: formData
+                            });
+                        } else if (this.textInput.trim()) {
+                            const reviews = this.textInput.split('\n').filter(r => r.trim());
+                            response = await fetch('http://localhost:8000/analyze_batch', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ reviews })
+                            });
+                        } else {
+                            alert('Please upload a file or enter reviews');
+                            this.isLoading = false;
+                            return;
+                        }
+
+                        if (!response.ok) {
+                            throw new Error('API request failed');
+                        }
+
+                        this.results = await response.json();
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('An error occurred while analyzing the sentiment. Please try again.');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
