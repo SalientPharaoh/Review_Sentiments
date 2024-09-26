@@ -91,6 +91,21 @@
                         </template>
                     </div>
                 </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold mb-4">Top Comments</h3>
+                    <div class="space-y-6">
+                        <template x-for="sentiment in ['positive', 'negative', 'neutral']" :key="sentiment">
+                            <div>
+                                <h4 class="text-lg font-medium mb-2 capitalize" x-text="sentiment"></h4>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <template x-for="comment in results[`top_${sentiment}`]" :key="comment">
+                                        <li class="text-sm text-gray-600" x-text="comment"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
 
