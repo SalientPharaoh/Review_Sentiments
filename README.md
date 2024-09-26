@@ -65,21 +65,21 @@ Analyzes sentiments from a file upload.
 - **Core Logic**: Sentiment analysis using Groq API
 - **API Endpoint**: File upload and processing
 
-## Key Functions
+### Key Functions
 
-### `num_tokens_from_string(string: str) -> int`
+#### `num_tokens_from_string(string: str) -> int`
 
 Calculates the number of tokens in a given string using the GPT-3.5-turbo tokenizer.
 
-### `analyze_sentiments_batch(reviews: List[str], max_retries: int = 5) -> List[Tuple[str, float]]`
+##### `analyze_sentiments_batch(reviews: List[str], max_retries: int = 5) -> List[Tuple[str, float]]`
 
 Processes a batch of reviews, chunking them if necessary, and sends them to the Groq API for sentiment analysis.
 
-### `process_chunk(chunk: List[str]) -> List[Tuple[str, float]]`
+#### `process_chunk(chunk: List[str]) -> List[Tuple[str, float]]`
 
 Processes a single chunk of reviews, formatting them into a prompt for the Groq API and parsing the response.
 
-### `process_reviews(reviews: List[str]) -> Dict[str, any]`
+#### `process_reviews(reviews: List[str]) -> Dict[str, any]`
 
 Orchestrates the sentiment analysis process and compiles the results.
 
@@ -113,4 +113,4 @@ Orchestrates the sentiment analysis process and compiles the results.
 
 ---
 
-For any issues or feature requests, please contact the development team or open an issue in the project repository.
+For any issues or feature requests, please open an issue in the project repository.
