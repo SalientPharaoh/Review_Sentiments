@@ -4,6 +4,9 @@ from typing import List, Dict, Tuple
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import pandas as pd
 import asyncio
@@ -21,6 +24,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Optimized Sentiment Analysis API")
 groq_client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 
 # Add CORS middleware
 app.add_middleware(
@@ -226,6 +232,10 @@ async def analyze_batch(review_batch: ReviewBatch):
     except Exception as e:
         logger.error(f"Error processing batch: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("./index.html", {"request": request, "title": "Sentiment Analysis API"})
 
 if __name__ == "__main__":
     import uvicorn
