@@ -136,13 +136,13 @@
                         if (fileInput.files.length > 0) {
                             const formData = new FormData();
                             formData.append('file', fileInput.files[0]);
-                            response = await fetch('http://localhost:8000/analyze_file', {
+                            response = await fetch('/analyze_file', {
                                 method: 'POST',
                                 body: formData
                             });
                         } else if (this.textInput.trim()) {
                             const reviews = this.textInput.split('\n').filter(r => r.trim());
-                            response = await fetch('http://localhost:8000/analyze_batch', {
+                            response = await fetch('/analyze_batch', {
                                 method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
